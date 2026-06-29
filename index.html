@@ -111,16 +111,16 @@ const yumi = {
   y: 280,
   r: 32,
   vy: 0,
-  gravity: 0.28,
-  flapPower: -6.2,
+  gravity: 0.18,
+  flapPower: -5.2,
   rotation: 0,
   wobble: 0,
 };
 
 // Pipes
 const PIPE_W = 60;
-const PIPE_GAP = 155;
-const PIPE_SPEED = 1.8;
+const PIPE_GAP = 190;
+const PIPE_SPEED = 1.4;
 let pipes = [];
 let pipeTimer = 0;
 const PIPE_INTERVAL = 90;
@@ -192,12 +192,16 @@ document.addEventListener('keydown', e => {
     flap();
   }
 });
+let lastFlap = 0;
 canvas.addEventListener('click', () => {
   if (state === 'dead') { reset(); return; }
   flap();
 });
 canvas.addEventListener('touchstart', e => {
   e.preventDefault();
+  const now = Date.now();
+  if (now - lastFlap < 200) return; // debounce rapid touches
+  lastFlap = now;
   if (state === 'dead') { reset(); return; }
   flap();
 }, { passive: false });
@@ -422,7 +426,7 @@ function drawDeadScreen() {
 }
 
 function checkCollision() {
-  const r = yumi.r * 0.7;
+  const r = yumi.r * 0.45;
   // Ground / ceiling
   if (yumi.y + r > canvas.height - 60 || yumi.y - r < 0) return true;
   // Pipes
