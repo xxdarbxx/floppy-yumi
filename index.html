@@ -118,12 +118,12 @@ const yumi = {
 };
 
 // Pipes
-const PIPE_W = 60;
-const PIPE_GAP = 190;
-const PIPE_SPEED = 1.4;
+const PIPE_W = 52;
+const PIPE_GAP = 230;
+const PIPE_SPEED = 1.3;
 let pipes = [];
 let pipeTimer = 0;
-const PIPE_INTERVAL = 90;
+const PIPE_INTERVAL = 100;
 
 // Particles
 let particles = [];
@@ -166,8 +166,8 @@ function spawnParticles(x, y) {
 }
 
 function spawnPipe() {
-  const minY = 80;
-  const maxY = canvas.height - 80 - PIPE_GAP;
+  const minY = 120;
+  const maxY = canvas.height - 120 - PIPE_GAP;
   const gapY = Math.random() * (maxY - minY) + minY;
   pipes.push({ x: canvas.width + PIPE_W, gapY, scored: false });
 }
@@ -426,15 +426,15 @@ function drawDeadScreen() {
 }
 
 function checkCollision() {
-  const r = yumi.r * 0.45;
+  const r = yumi.r * 0.38;
   // Ground / ceiling
   if (yumi.y + r > canvas.height - 60 || yumi.y - r < 0) return true;
-  // Pipes
+  // Pipes — use only the pipe body width, not the cap overhang
   for (const p of pipes) {
     const px = p.x, pw = PIPE_W;
     const topH = p.gapY;
     const botY = p.gapY + PIPE_GAP;
-    if (yumi.x + r > px - 6 && yumi.x - r < px + pw + 6) {
+    if (yumi.x + r > px && yumi.x - r < px + pw) {
       if (yumi.y - r < topH || yumi.y + r > botY) return true;
     }
   }
