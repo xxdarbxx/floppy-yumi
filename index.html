@@ -34,6 +34,68 @@ canvas.height = 600;
 const yumiImg = new Image();
 yumiImg.src = 'yumi.png';
 
+// Audio
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+function resumeAudio() {
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+
+function playFlap() {
+  resumeAudio();
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(520, audioCtx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(780, audioCtx.currentTime + 0.06);
+  gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.12);
+  osc.start(); osc.stop(audioCtx.currentTime + 0.12);
+}
+
+function playScore() {
+  resumeAudio();
+  [0, 0.08, 0.16].forEach((t, i) => {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.type = 'triangle';
+    const freqs = [660, 880, 1100];
+    osc.frequency.setValueAtTime(freqs[i], audioCtx.currentTime + t);
+    gain.gain.setValueAtTime(0.15, audioCtx.currentTime + t);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + t + 0.1);
+    osc.start(audioCtx.currentTime + t);
+    osc.stop(audioCtx.currentTime + t + 0.1);
+  });
+}
+
+function playDead() {
+  resumeAudio();
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(80, audioCtx.currentTime + 0.5);
+  gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+  osc.start(); osc.stop(audioCtx.currentTime + 0.5);
+}
+
+function playHit() {
+  resumeAudio();
+  const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.1, audioCtx.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
+  const src = audioCtx.createBufferSource();
+  const gain = audioCtx.createGain();
+  src.buffer = buf;
+  src.connect(gain); gain.connect(audioCtx.destination);
+  gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+  src.start();
+}
+
 // Game state
 let state = 'waiting'; // waiting | playing | dead
 let score = 0;
@@ -83,6 +145,7 @@ function flap() {
   if (state === 'waiting') state = 'playing';
   yumi.vy = yumi.flapPower;
   yumi.wobble = 1;
+  playFlap();
   spawnParticles(yumi.x, yumi.y);
 }
 
@@ -390,12 +453,15 @@ function update() {
         p.scored = true;
         score++;
         if (score > best) best = score;
+        playScore();
       }
     });
     pipes = pipes.filter(p => p.x + PIPE_W + 10 > 0);
 
     if (checkCollision()) {
       state = 'dead';
+      playHit();
+      setTimeout(playDead, 80);
     }
   }
 
