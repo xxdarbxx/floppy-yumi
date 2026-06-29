@@ -109,17 +109,17 @@ let frame = 0;
 const yumi = {
   x: 90,
   y: 280,
-  r: 32,
+  r: 38,
   vy: 0,
-  gravity: 0.18,
-  flapPower: -5.2,
+  gravity: 0.162,
+  flapPower: -4.95,
   rotation: 0,
   wobble: 0,
 };
 
 // Pipes
-const PIPE_W = 52;
-const PIPE_GAP = 230;
+const PIPE_W = 42;
+const PIPE_GAP = 245;
 const PIPE_SPEED = 1.3;
 let pipes = [];
 let pipeTimer = 0;
@@ -223,27 +223,97 @@ function drawRoundRect(x, y, w, h, r, fill, stroke) {
   if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = 3; ctx.stroke(); }
 }
 
+function drawBottle(x, y, w, h, flipped) {
+  const cx = x + w / 2;
+  const nipW = w * 0.35;
+  const nipH = 14;
+  const capH = 18;
+  const bodyR = 8;
+
+  ctx.save();
+  if (flipped) {
+    ctx.translate(cx, y + h / 2);
+    ctx.scale(1, -1);
+    ctx.translate(-cx, -(y + h / 2));
+  }
+
+  // Body gradient
+  const bg = ctx.createLinearGradient(x, 0, x + w, 0);
+  bg.addColorStop(0, '#daf0ff');
+  bg.addColorStop(0.35, '#ffffff');
+  bg.addColorStop(1, '#b0d8f5');
+
+  // Main bottle body
+  drawRoundRect(x, y + nipH + capH, w, h - nipH - capH, bodyR, bg, '#7ab8d8');
+
+  // Milk fill level
+  const fillY = y + nipH + capH + (h - nipH - capH) * 0.22;
+  const fillH = (h - nipH - capH) * 0.65;
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x + 2, fillY, w - 4, fillH);
+  ctx.clip();
+  const mg = ctx.createLinearGradient(x, fillY, x + w, fillY);
+  mg.addColorStop(0, '#fffde8');
+  mg.addColorStop(0.5, '#ffffff');
+  mg.addColorStop(1, '#f5f0d0');
+  ctx.fillStyle = mg;
+  ctx.fillRect(x + 2, fillY, w - 4, fillH);
+  ctx.restore();
+
+  // Measurement lines
+  ctx.strokeStyle = '#a0ccee';
+  ctx.lineWidth = 1;
+  for (let i = 1; i <= 3; i++) {
+    const ly = y + nipH + capH + (h - nipH - capH) * (i / 4);
+    ctx.beginPath();
+    ctx.moveTo(x + w * 0.65, ly);
+    ctx.lineTo(x + w - 4, ly);
+    ctx.stroke();
+  }
+
+  // Collar / cap ring
+  drawRoundRect(x + (w - nipW * 1.5) / 2, y + nipH, nipW * 1.5, capH, 5, '#ffd6e8', '#e8a0c0');
+
+  // Nipple
+  ctx.beginPath();
+  ctx.moveTo(cx - nipW / 2, y + nipH);
+  ctx.bezierCurveTo(cx - nipW / 2, y + 4, cx - nipW / 4, y, cx, y);
+  ctx.bezierCurveTo(cx + nipW / 4, y, cx + nipW / 2, y + 4, cx + nipW / 2, y + nipH);
+  ctx.closePath();
+  ctx.fillStyle = '#f5c2a0';
+  ctx.fill();
+  ctx.strokeStyle = '#d8956e';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Nipple hole dot
+  ctx.beginPath();
+  ctx.arc(cx, y + 3, 2, 0, Math.PI * 2);
+  ctx.fillStyle = '#c07850';
+  ctx.fill();
+
+  // Shine
+  ctx.save();
+  ctx.globalAlpha = 0.35;
+  ctx.fillStyle = '#fff';
+  drawRoundRect(x + 5, y + nipH + capH + 6, 6, (h - nipH - capH) * 0.4, 3, '#fff', null);
+  ctx.restore();
+
+  ctx.restore();
+}
+
 function drawPipe(pipe) {
   const topH = pipe.gapY;
   const botY = pipe.gapY + PIPE_GAP;
   const botH = canvas.height - botY;
   const px = pipe.x;
 
-  // Top pipe
-  const tg = ctx.createLinearGradient(px, 0, px + PIPE_W, 0);
-  tg.addColorStop(0, '#6ee36e');
-  tg.addColorStop(0.5, '#a8f0a8');
-  tg.addColorStop(1, '#4bbf4b');
-  drawRoundRect(px, 0, PIPE_W, topH - 14, 10, tg, '#3a9e3a');
-  drawRoundRect(px - 6, topH - 28, PIPE_W + 12, 28, 10, tg, '#3a9e3a');
+  // Top bottle (flipped upside down, nipple points down into gap)
+  drawBottle(px, 0, PIPE_W, topH, true);
 
-  // Bottom pipe
-  const bg2 = ctx.createLinearGradient(px, 0, px + PIPE_W, 0);
-  bg2.addColorStop(0, '#6ee36e');
-  bg2.addColorStop(0.5, '#a8f0a8');
-  bg2.addColorStop(1, '#4bbf4b');
-  drawRoundRect(px, botY + 14, PIPE_W, botH, 10, bg2, '#3a9e3a');
-  drawRoundRect(px - 6, botY, PIPE_W + 12, 28, 10, bg2, '#3a9e3a');
+  // Bottom bottle (normal, nipple points up into gap)
+  drawBottle(px, botY, PIPE_W, botH, false);
 }
 
 function drawYumi() {
