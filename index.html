@@ -40,6 +40,10 @@ const CHARACTERS = [
   { file: 'char3.png', label: 'Ate' },
   { file: 'char4.png', label: 'Nanay' },
   { file: 'char5.png', label: 'Ditse' },
+  { file: 'char6.png', label: 'Tita' },
+  { file: 'char7.png', label: 'Manang' },
+  { file: 'char8.png', label: 'Lola' },
+  { file: 'char9.png', label: 'Kuya 2' },
 ];
 CHARACTERS.forEach(c => {
   c.img = new Image();
@@ -170,12 +174,12 @@ function drawRoundRect(x, y, w, h, r, fill, stroke) {
 
 // ── Character select screen ──────────────────────────────────
 // Layout: 3 columns × 2 rows
-const SEL_COLS = 3;
+const SEL_COLS = 5;
 const SEL_ROWS = 2;
-const SEL_PAD  = 14;
-const SEL_TOP  = 130;
+const SEL_PAD  = 8;
+const SEL_TOP  = 118;
 const CELL_W   = (canvas.width - SEL_PAD * (SEL_COLS + 1)) / SEL_COLS;
-const CELL_H   = CELL_W * 1.15;
+const CELL_H   = CELL_W * 1.2;
 
 function charCell(i) {
   const col = i % SEL_COLS;
