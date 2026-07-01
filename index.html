@@ -364,69 +364,91 @@ function resetGame() {
   state = 'waiting'; frame = 0;
 }
 
-// ── Drawing ──────────────────────────────────────────────────
-function drawBottle(x, y, w, h, flipped) {
-  const cx = x + w / 2, nipW = w * 0.35, nipH = 14, capH = 18, bodyR = 8;
-  ctx.save();
-  if (flipped) {
-    ctx.translate(cx, y + h / 2); ctx.scale(1, -1); ctx.translate(-cx, -(y + h / 2));
+// ── Offscreen cache ──────────────────────────────────────────
+// Pre-render a bottle tile (upright) of fixed height for slicing
+const BOTTLE_TILE_H = 400;
+const bottleCache = document.createElement('canvas');
+bottleCache.width = PIPE_W; bottleCache.height = BOTTLE_TILE_H;
+(function buildBottleCache() {
+  const c = bottleCache.getContext('2d');
+  const w = PIPE_W, h = BOTTLE_TILE_H;
+  const cx = w / 2, nipW = w * 0.35, nipH = 12, capH = 16;
+  // Body
+  const bg = c.createLinearGradient(0, 0, w, 0);
+  bg.addColorStop(0, '#c8e8ff'); bg.addColorStop(0.4, '#ffffff'); bg.addColorStop(1, '#9ecde8');
+  c.fillStyle = bg;
+  c.beginPath(); c.roundRect(0, nipH + capH, w, h - nipH - capH, 7); c.fill();
+  c.strokeStyle = '#6aaace'; c.lineWidth = 2; c.stroke();
+  // Milk fill
+  const fillY = nipH + capH + (h - nipH - capH) * 0.22;
+  const fillH = (h - nipH - capH) * 0.6;
+  c.fillStyle = '#fffbe8';
+  c.fillRect(2, fillY, w - 4, fillH);
+  // Measure lines
+  c.strokeStyle = '#90c0de'; c.lineWidth = 1;
+  for (let i = 1; i <= 4; i++) {
+    const ly = nipH + capH + (h - nipH - capH) * (i / 5);
+    c.beginPath(); c.moveTo(w * 0.6, ly); c.lineTo(w - 3, ly); c.stroke();
   }
-  const bg = ctx.createLinearGradient(x, 0, x + w, 0);
-  bg.addColorStop(0, '#daf0ff'); bg.addColorStop(0.35, '#ffffff'); bg.addColorStop(1, '#b0d8f5');
-  drawRoundRect(x, y + nipH + capH, w, h - nipH - capH, bodyR, bg, '#7ab8d8');
+  // Shine
+  c.fillStyle = 'rgba(255,255,255,0.4)';
+  c.fillRect(4, nipH + capH + 8, 5, fillH * 0.5);
+  // Collar
+  c.fillStyle = '#ffd6e8'; c.strokeStyle = '#e8a0c0'; c.lineWidth = 1.5;
+  c.beginPath(); c.roundRect(cx - nipW * 0.8, nipH, nipW * 1.6, capH, 4); c.fill(); c.stroke();
+  // Nipple
+  c.beginPath();
+  c.moveTo(cx - nipW / 2, nipH);
+  c.bezierCurveTo(cx - nipW / 2, 3, cx - nipW / 4, 0, cx, 0);
+  c.bezierCurveTo(cx + nipW / 4, 0, cx + nipW / 2, 3, cx + nipW / 2, nipH);
+  c.closePath(); c.fillStyle = '#f5c2a0'; c.fill();
+  c.strokeStyle = '#d8956e'; c.lineWidth = 1.2; c.stroke();
+  c.beginPath(); c.arc(cx, 2.5, 1.5, 0, Math.PI * 2); c.fillStyle = '#b06840'; c.fill();
+})();
 
-  const fillY = y + nipH + capH + (h - nipH - capH) * 0.22;
-  const fillH = (h - nipH - capH) * 0.65;
-  ctx.save();
-  ctx.beginPath(); ctx.rect(x + 2, fillY, w - 4, fillH); ctx.clip();
-  const mg = ctx.createLinearGradient(x, fillY, x + w, fillY);
-  mg.addColorStop(0, '#fffde8'); mg.addColorStop(0.5, '#ffffff'); mg.addColorStop(1, '#f5f0d0');
-  ctx.fillStyle = mg; ctx.fillRect(x + 2, fillY, w - 4, fillH);
-  ctx.restore();
-
-  ctx.strokeStyle = '#a0ccee'; ctx.lineWidth = 1;
-  for (let i = 1; i <= 3; i++) {
-    const ly = y + nipH + capH + (h - nipH - capH) * (i / 4);
-    ctx.beginPath(); ctx.moveTo(x + w * 0.65, ly); ctx.lineTo(x + w - 4, ly); ctx.stroke();
-  }
-  drawRoundRect(x + (w - nipW * 1.5) / 2, y + nipH, nipW * 1.5, capH, 5, '#ffd6e8', '#e8a0c0');
-  ctx.beginPath();
-  ctx.moveTo(cx - nipW / 2, y + nipH);
-  ctx.bezierCurveTo(cx - nipW / 2, y + 4, cx - nipW / 4, y, cx, y);
-  ctx.bezierCurveTo(cx + nipW / 4, y, cx + nipW / 2, y + 4, cx + nipW / 2, y + nipH);
-  ctx.closePath(); ctx.fillStyle = '#f5c2a0'; ctx.fill();
-  ctx.strokeStyle = '#d8956e'; ctx.lineWidth = 1.5; ctx.stroke();
-  ctx.beginPath(); ctx.arc(cx, y + 3, 2, 0, Math.PI * 2); ctx.fillStyle = '#c07850'; ctx.fill();
-  ctx.save(); ctx.globalAlpha = 0.35;
-  drawRoundRect(x + 5, y + nipH + capH + 6, 6, (h - nipH - capH) * 0.4, 3, '#fff', null);
-  ctx.restore(); ctx.restore();
-}
+// Pre-render static background (sky + ground, no clouds)
+const bgCache = document.createElement('canvas');
+bgCache.width = canvas.width; bgCache.height = canvas.height;
+(function buildBgCache() {
+  const c = bgCache.getContext('2d');
+  const sky = c.createLinearGradient(0, 0, 0, canvas.height);
+  sky.addColorStop(0, '#a8d8f0'); sky.addColorStop(1, '#ddf0ff');
+  c.fillStyle = sky; c.fillRect(0, 0, canvas.width, canvas.height);
+  const gnd = c.createLinearGradient(0, canvas.height - 60, 0, canvas.height);
+  gnd.addColorStop(0, '#8bc34a'); gnd.addColorStop(0.4, '#5a9020'); gnd.addColorStop(1, '#3a6a10');
+  c.fillStyle = gnd; c.fillRect(0, canvas.height - 60, canvas.width, 60);
+  c.fillStyle = '#7ab53a'; c.fillRect(0, canvas.height - 60, canvas.width, 10);
+})();
 
 function drawPipe(pipe) {
   const px = pipe.x, topH = pipe.gapY, botY = pipe.gapY + PIPE_GAP;
-  drawBottle(px, 0, PIPE_W, topH, true);
-  drawBottle(px, botY, PIPE_W, canvas.height - botY, false);
+  const botH = canvas.height - botY;
+
+  // Top bottle — draw flipped (slice from bottom of tile)
+  ctx.save();
+  ctx.translate(px + PIPE_W / 2, topH / 2);
+  ctx.scale(1, -1);
+  ctx.drawImage(bottleCache, 0, 0, PIPE_W, topH, -PIPE_W / 2, -topH / 2, PIPE_W, topH);
+  ctx.restore();
+
+  // Bottom bottle — draw upright
+  ctx.drawImage(bottleCache, 0, 0, PIPE_W, botH, px, botY, PIPE_W, botH);
 }
 
 function drawBackground() {
-  const sky = ctx.createLinearGradient(0, 0, 0, canvas.height);
-  sky.addColorStop(0, '#a8d8f0'); sky.addColorStop(1, '#e8f4ff');
-  ctx.fillStyle = sky; ctx.fillRect(0, 0, canvas.width, canvas.height);
-
+  // Static bg
+  ctx.drawImage(bgCache, 0, 0);
+  // Animated clouds only
   clouds.forEach(c => {
-    ctx.save(); ctx.globalAlpha = 0.85; ctx.fillStyle = '#fff';
+    ctx.fillStyle = '#fff';
+    ctx.globalAlpha = 0.82;
     ctx.beginPath(); ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(c.x + c.r * 0.8, c.y + 6, c.r * 0.75, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(c.x - c.r * 0.6, c.y + 8, c.r * 0.6, 0, Math.PI * 2); ctx.fill();
-    ctx.restore();
+    ctx.beginPath(); ctx.arc(c.x + c.r * 0.8, c.y + 5, c.r * 0.7, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(c.x - c.r * 0.55, c.y + 7, c.r * 0.55, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1;
     c.x -= c.s;
     if (c.x + c.r * 2 < 0) c.x = canvas.width + c.r * 2;
   });
-
-  const gnd = ctx.createLinearGradient(0, canvas.height - 60, 0, canvas.height);
-  gnd.addColorStop(0, '#8bc34a'); gnd.addColorStop(0.3, '#6a9e2e'); gnd.addColorStop(1, '#4a7a1a');
-  ctx.fillStyle = gnd; ctx.fillRect(0, canvas.height - 60, canvas.width, 60);
-  ctx.fillStyle = '#7ab53a'; ctx.fillRect(0, canvas.height - 60, canvas.width, 12);
 }
 
 function drawCharacter() {
