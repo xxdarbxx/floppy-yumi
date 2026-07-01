@@ -354,8 +354,20 @@ function spawnParticles(x, y) {
 }
 
 function spawnPipe() {
-  const minY = 120, maxY = canvas.height - 120 - PIPE_GAP;
-  pipes.push({ x: canvas.width + PIPE_W, gapY: Math.random() * (maxY - minY) + minY, scored: false });
+  const roll = Math.random();
+  let gapY;
+  if (roll < 0.2) {
+    // Very high gap — long bottom pipe
+    gapY = 60 + Math.random() * 60;
+  } else if (roll < 0.4) {
+    // Very low gap — long top pipe
+    gapY = canvas.height - PIPE_GAP - 60 - Math.random() * 60;
+  } else {
+    // Normal range
+    const minY = 130, maxY = canvas.height - 130 - PIPE_GAP;
+    gapY = Math.random() * (maxY - minY) + minY;
+  }
+  pipes.push({ x: canvas.width + PIPE_W, gapY, scored: false });
 }
 
 function resetGame() {
