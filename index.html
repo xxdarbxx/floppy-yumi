@@ -5,22 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Floppy Yumi</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body {
+      width: 100%; height: 100%;
       background: #1a1a2e;
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100vh;
       font-family: 'Arial Rounded MT Bold', Arial, sans-serif;
       overflow: hidden;
+      touch-action: none;
     }
     canvas {
       display: block;
-      border-radius: 16px;
+      border-radius: 12px;
       box-shadow: 0 0 40px rgba(255,180,200,0.4);
-      width: min(100vw, calc(100vh * 400 / 600));
-      height: min(100vh, calc(100vw * 600 / 400));
+      width: min(100svw, calc(100svh * 400 / 600));
+      height: min(100svh, calc(100svw * 600 / 400));
+      image-rendering: auto;
     }
   </style>
 </head>
@@ -143,7 +145,7 @@ const yumi = {
 
 const PIPE_W = 42;
 const PIPE_GAP = 297;
-const PIPE_SPEED = 1.43;
+const PIPE_SPEED = 1.72;
 let pipes = [];
 let pipeTimer = 0;
 const PIPE_INTERVAL = 100;
@@ -246,11 +248,16 @@ function drawSelectScreen() {
       ctx.fill();
     }
 
-    // Label
-    ctx.fillStyle = selected ? '#d44080' : '#555';
-    ctx.font = `bold ${selected ? 13 : 12}px Arial`;
+    // Label — shrink font to fit long names
+    ctx.fillStyle = selected ? '#d44080' : '#444';
     ctx.textAlign = 'center';
-    ctx.fillText(c.label, x + w / 2, y + h - 7);
+    let fontSize = 11;
+    ctx.font = `bold ${fontSize}px Arial`;
+    while (ctx.measureText(c.label).width > w - 4 && fontSize > 7) {
+      fontSize--;
+      ctx.font = `bold ${fontSize}px Arial`;
+    }
+    ctx.fillText(c.label, x + w / 2, y + h - 5);
   });
 
   // Play button
