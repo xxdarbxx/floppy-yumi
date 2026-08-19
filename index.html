@@ -24,10 +24,35 @@
       height: min(100svh, calc(100svw * 600 / 400));
       image-rendering: auto;
     }
+    #footer {
+      position: fixed;
+      bottom: 0;
+      left: 0; right: 0;
+      text-align: center;
+      padding: 6px 8px;
+      font-size: 10px;
+      color: rgba(255,255,255,0.75);
+      line-height: 1.6;
+      pointer-events: auto;
+      background: rgba(0,0,0,0.35);
+    }
+    #footer a {
+      color: #ffb3d1;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    #footer a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
 <canvas id="game"></canvas>
+<div id="footer">
+  Developed by <a href="https://www.yandyitsolutions.com" target="_blank">Y and Y IT Solutions</a>
+  &nbsp;&amp;&nbsp;
+  <a href="https://www.renzmaturino.site" target="_blank">Renz "darb" Maturino</a>
+  &nbsp;|&nbsp;
+  Need a T-shirt or Souvenir? Visit <a href="https://www.yicaprints.site" target="_blank">Yica Prints</a>
+</div>
 <script>
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
